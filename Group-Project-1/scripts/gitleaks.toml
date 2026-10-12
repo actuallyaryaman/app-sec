@@ -1,0 +1,3 @@
+# Force scanner defaults rather than trusting config in target repository.
+[extend]
+useDefault = true

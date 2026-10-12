@@ -1,0 +1,15 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+[*.py]
+indent_style = space
+indent_size = 4
+
+# Do not automatically reformat assignment originals; their bytes are evidence.
+[Group-Project-2/infinite-money-logic-flaw*.py]
+insert_final_newline = unset
+trim_trailing_whitespace = false

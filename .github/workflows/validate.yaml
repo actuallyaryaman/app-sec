@@ -1,0 +1,44 @@
+name: Offline lab validation
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux/amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
+    env:
+      SCANNER_PLATFORM: ${{ matrix.platform }}
+    steps:
+      - name: Check out without storing Git credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check both Compose configurations
+        run: |
+          docker compose -f Group-Project-1/compose.yaml config --quiet
+          docker compose -f Group-Project-2/compose.yaml config --quiet
+      - name: Check Part 1 parser using native architecture
+        working-directory: Group-Project-1
+        run: |
+          docker compose run --rm init
+          docker compose run --rm --entrypoint python analysis /scripts/selftest.py
+      - name: Build and test Part 2 without remote attacks
+        working-directory: Group-Project-2
+        run: |
+          docker compose build
+          docker compose run --rm lab versions
+          docker compose run --rm lab check
+          docker compose run --rm lab selftest
+          docker compose run --rm lab help
+      - name: Delete CI project state
+        if: always()
+        run: |
+          docker compose -f Group-Project-1/compose.yaml down --volumes --remove-orphans
+          docker compose -f Group-Project-2/compose.yaml down --volumes --remove-orphans --rmi all

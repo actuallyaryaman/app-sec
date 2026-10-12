@@ -1,0 +1,31 @@
+name: se6002-group-project-2
+services:
+  lab:
+    image: se6002-group-project-2-lab:1
+    platform: ${LAB_PLATFORM:-}
+    build:
+      context: .
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.13.16-slim-bookworm}
+        LAB_UID: ${LAB_UID:-1000}
+        LAB_GID: ${LAB_GID:-1000}
+    user: "${LAB_UID:-1000}:${LAB_GID:-1000}"
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    tmpfs: [/tmp:rw,noexec,nosuid,size=64m,mode=1777]
+    volumes:
+      - work:/work
+      - ./infinite-money-logic-flaw.py:/originals/infinite-money-logic-flaw.py:ro,Z
+      - ./infinite-money-logic-flaw__updated.py:/originals/infinite-money-logic-flaw__updated.py:ro,Z
+      - ./logs:/export:Z
+    networks: [training]
+    command: [help]
+volumes:
+  work:
+networks:
+  training:
+    driver: bridge

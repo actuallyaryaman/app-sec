@@ -1,0 +1,89 @@
+name: se6002-security-lab
+x-common: &common
+  platform: ${SCANNER_PLATFORM:-linux/amd64}
+  user: "${LAB_UID:-1000}:${LAB_GID:-1000}"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp:rw,noexec,nosuid,size=256m]
+  environment: &env
+    HOME: /tmp
+    PYTHONDONTWRITEBYTECODE: "1"
+    LAB_UID: ${LAB_UID:-1000}
+    LAB_GID: ${LAB_GID:-1000}
+    TARGET_ARCH: ${TARGET_ARCH:-amd64}
+    DVWA_IMAGE: ${DVWA_IMAGE:-docker.io/vulnerables/web-dvwa:latest}
+    GRAFANA_IMAGE: ${GRAFANA_IMAGE:-docker.io/grafana/grafana:8.1.5}
+    DVWA_REF: ${DVWA_REF:-HEAD}
+    OFFLINE: ${OFFLINE:-0}
+    DB_SNAPSHOT: ${DB_SNAPSHOT:-}
+  volumes:
+    - state:/lab
+    - ./scripts:/scripts:ro,Z
+services:
+  init:
+    <<: *common
+    image: alpine:3.21.3
+    user: "0:0"
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    network_mode: none
+    entrypoint: [/bin/sh, /scripts/init.sh]
+    volumes:
+      - state:/lab
+      - cache:/cache
+      - ./scripts:/scripts:ro,Z
+  transfer:
+    networks: [download]
+    <<: *common
+    image: quay.io/skopeo/stable:v1.18.0
+    entrypoint: [/bin/sh, /scripts/transfer.sh]
+  git:
+    networks: [download]
+    <<: *common
+    image: alpine/git:2.47.2
+    entrypoint: [/bin/sh, /scripts/git.sh]
+  trivy:
+    networks: [download]
+    <<: *common
+    image: aquasec/trivy:0.74.0
+    entrypoint: [/bin/sh, /scripts/trivy.sh]
+    volumes:
+      - state:/lab
+      - cache:/cache
+      - ./scripts:/scripts:ro,Z
+  gitleaks:
+    <<: *common
+    image: ghcr.io/gitleaks/gitleaks:v8.24.3
+    network_mode: none
+    entrypoint: [/bin/sh, /scripts/gitleaks.sh]
+  analysis:
+    <<: *common
+    image: python:3.13.2-alpine3.21
+    network_mode: none
+    entrypoint: [python, /scripts/analyze.py]
+    volumes:
+      - state:/lab
+      - ./scripts:/scripts:ro,Z
+  shell:
+    <<: *common
+    image: python:3.13.2-alpine3.21
+    network_mode: none
+    entrypoint: [/bin/sh]
+    stdin_open: true
+    tty: true
+  export:
+    <<: *common
+    image: python:3.13.2-alpine3.21
+    user: "${LAB_UID:-1000}:${LAB_GID:-1000}"
+    network_mode: none
+    entrypoint: [python, /scripts/analyze.py, export]
+    volumes:
+      - state:/lab:ro
+      - ./scripts:/scripts:ro,Z
+      - ./reports:/export:Z
+volumes:
+  state:
+  cache:
+networks:
+  download:
+    driver: bridge
