@@ -1,5 +1,4 @@
 # Managed-workspace metadata; never include credentials or local agent settings.
-.git-local/
 .agents/
 .codex/
 .aws/

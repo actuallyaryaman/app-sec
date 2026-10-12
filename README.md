@@ -37,14 +37,14 @@ git add .
 git commit -m "Initialize SE6002 security labs"
 ```
 
-In this particular managed workspace, `.git` is protected and cannot be initialized. Local Git metadata instead lives in ignored `.git-local`, with this directory as the working tree. Use these commands here only:
+The entire `AppSec` directory is one repository, with standard metadata in the root `.git` directory. Both project folders share its history. From the repository root, use:
 
 ```text
-git --git-dir=.git-local --work-tree=. status
-git --git-dir=.git-local --work-tree=. log --oneline
+git status
+git log --oneline
 ```
 
-You can add a chosen remote later using the same `--git-dir`/`--work-tree` flags; a teammate's normal clone will have an ordinary `.git` directory and will not need those flags. Local Git metadata is not a lab dependency or included in project image build contexts. No remote target URL/credential is stored in the repository.
+You can add a chosen remote later using standard Git commands. Git metadata is not a lab dependency or included in project image build contexts. No remote target URL/credential is stored in the repository.
 
 ## Common preflight
 
@@ -127,7 +127,7 @@ Exports appear in `Group-Project-2/logs/`. Private response files, generated tra
 
 ## Git hygiene and collaboration
 
-Root ignore rules exclude local agent/cloud configuration, `.env` files, private keys, caches, raw/exported evidence, and this managed workspace's separate Git metadata. Empty report/log directories are retained via `.gitkeep`. All project configuration, documentation, tools, and supplied scripts are intended to be versioned. The supplied scripts contain public training credentials; they are not real account credentials. Never add your real cookies, passwords, lab tokens, or raw HTML to Git.
+Root ignore rules exclude local agent/cloud configuration, `.env` files, private keys, caches, and raw/exported evidence. Empty report/log directories are retained via `.gitkeep`. All project configuration, documentation, tools, and supplied scripts are intended to be versioned. The supplied scripts contain public training credentials; they are not real account credentials. Never add your real cookies, passwords, lab tokens, or raw HTML to Git.
 
 Share reviewed, sanitized evidence through your team's chosen channel, or explicitly force-add only files you have checked. Keep machine-specific `.env` overrides local. Do not commit result files simply to make teammate counts match. The two Compose project names are distinct; cleanup of one does not affect the other. Multiple checkouts of the same project on one Docker engine share that fixed project's volumes, so do not run those concurrently or use them as independent experiments.
 
