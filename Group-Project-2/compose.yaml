@@ -16,7 +16,8 @@ services:
     security_opt: [no-new-privileges:true]
     stop_signal: SIGINT
     stop_grace_period: 30s
-    tmpfs: [/tmp:rw,noexec,nosuid,size=64m,mode=1777]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
     volumes:
       - work:/work
       - ./infinite-money-logic-flaw.py:/originals/infinite-money-logic-flaw.py:ro,Z
