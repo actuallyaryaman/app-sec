@@ -1,52 +1,24 @@
-# SE6002 Application Security — team labs
+# SE6002 Application Security
 
-One repository contains two independent, disposable Docker labs:
+Two Docker labs in one repository:
 
-| Directory | Purpose | Detailed instructions |
-| --- | --- | --- |
-| `Group-Project-1` | Trivy image scans and DVWA Gitleaks scans | [Part 1 README](Group-Project-1/README.md) |
-| `Group-Project-2` | Investigate the two supplied infinite-money Python scripts | [Part 2 README](Group-Project-2/README.md), [source analysis](Group-Project-2/SCRIPT_ANALYSIS.md) |
+- **[Part 1](Group-Project-1/README.md):** Trivy scans of DVWA/Grafana and Gitleaks scans of DVWA.
+- **[Part 2](Group-Project-2/README.md):** Run and compare the supplied infinite-money scripts. [Code analysis](Group-Project-2/SCRIPT_ANALYSIS.md).
 
-Each teammate gets their own containers, networks, named volumes, and lab instance. Neither project requires host Python, pip, Git for DVWA, jq, Make, or scanner installations. Docker and Docker Compose are the lab runtime dependencies. Git is optional for acquiring/managing this repository: teammates may instead download and extract its ZIP through their browser. Repository acquisition is separate from the Part 1 DVWA clone, which remains in a Docker volume.
+## Requirements
 
-## Supported machines and honest limits
+Docker with Linux containers and Compose v2+. Windows/macOS users can use Docker Desktop. All lab tools run in containers.
 
-The intended baseline is a 64-bit Windows, macOS, or Linux machine with a working **Linux-container** Docker engine and Compose v2 or newer. Start Docker Desktop on Windows/macOS; use Linux containers on Windows, not Windows container mode. Linux users may use their already configured Docker Engine or Docker Desktop. Docker must have permission to access its daemon and downloaded images. Windows virtualization/WSL requirements are part of [Docker Desktop's supported setup](https://docs.docker.com/desktop/setup/install/windows-install/), not dependencies installed by these labs.
+Part 1 uses AMD64 scanners; ARM machines need AMD64 emulation. Part 2 builds for your machine's architecture. On Linux, if your UID/GID differs from 1000, set `LAB_UID` and `LAB_GID` in each project's `.env` before setup.
 
-| Machine | Part 1 scanners | Part 2 runner |
-| --- | --- | --- |
-| Intel/AMD x86-64 Linux/Windows/macOS | Default `linux/amd64` | Native Linux image build |
-| Apple Silicon macOS | Default AMD64 scanners require Docker Desktop's available AMD64 emulation | Native ARM64 build |
-| ARM64 Linux | Use AMD64 only if emulation is already available; otherwise verify all scanner image ARM64 manifests before changing `SCANNER_PLATFORM` | Native ARM64 build |
-| ARM64 Windows | Requires a supported Docker Desktop/WSL Linux-container configuration and AMD64 emulation for default Part 1 | Native ARM64 build where Docker supports it |
-| 32-bit CPUs, unsupported OS, no virtualization/usable Docker backend | Not supported | Not supported |
-
-Docker cannot make unsupported hardware or missing architecture manifests disappear. This repository does not install emulators, register host binary handlers, or run privileged setup containers. If your Docker setup cannot execute the selected scanner architecture, Part 1 will fail visibly; use a compatible Docker machine rather than silently changing scan coverage. On ARM64, native scanner support must be verified before opting out of the AMD64 baseline.
-
-Part 1 separates `SCANNER_PLATFORM` (tool execution) from `TARGET_ARCH` (image bytes being investigated). Both default to AMD64, so teammates analyze the same target architecture. Skopeo and Trivy do not execute DVWA/Grafana binaries; no vulnerable app is started. Part 2 uses native architecture by default; optional `LAB_PLATFORM=linux/amd64` selects an emulated build/runtime explicitly when supported. Emulation can be slower.
-
-Allow several GB of Docker disk space, especially for Part 1 archives/database snapshots. Internet access to image/package registries and databases is required for initial setup. Part 2's deliberate attack runs require access to your own authorized Academy instance. Available hardware resources, remote lab changes, registry availability, and database updates affect behavior; identical code does not imply identical remote results.
-
-## Get the repository
-
-Clone the repository using an existing Git installation, or download and extract its ZIP from [GitHub](https://github.com/actuallyaryaman/app-sec) without installing Git:
+Clone this repository or [download its ZIP](https://github.com/actuallyaryaman/app-sec/archive/refs/heads/main.zip):
 
 ```text
 git clone https://github.com/actuallyaryaman/app-sec.git
 cd app-sec
 ```
 
-Both project folders belong to this single repository. The commands below work in PowerShell, Command Prompt, Bash, and zsh.
-
-## Local configuration
-
-Keep the whole extracted repository together, including the empty `reports/` and `logs/` directories. Relative Compose paths are resolved from each project's Compose file, so checkout location and path spaces do not require editing configurations. Do not rename the assignment script files. Use a local checkout with a local Docker engine: bind-mounted files must exist on the Docker engine's machine; an arbitrary remote context is not automatically supported.
-
-No `.env` file is required for the defaults. For overrides, copy that project's `.env.example` to `.env` using your file manager/editor. On macOS/Windows Docker Desktop, keep UID/GID defaults unless you have a specific mapped-permission issue. On Linux, set `LAB_UID`/`LAB_GID` to your account's numeric IDs before initialization/build if they differ from 1000; this permits host report export without root. Your existing shell/user settings can provide those IDs. Part 1 init fixes volume ownership; Part 2's IDs must match at build/run time. These are per-machine settings and `.env` is ignored by Git.
-
-Windows checkouts are protected by `.gitattributes`: orchestration files use LF, while the supplied assignment scripts bypass line-ending conversion entirely so their hashes remain identical. Do not let an editor reformat those originals. PowerShell users do not need Bash, Git Bash, WSL shell commands, or the optional Part 1 `lab.sh` wrapper to operate the labs; use Compose below.
-
-## Part 1 — same commands on every supported OS
+## Part 1
 
 From the repository root:
 
@@ -62,31 +34,19 @@ docker compose run --rm analysis summary
 docker compose run --rm export
 ```
 
-To inspect findings and collect genuine screenshots:
+Sanitized reports are exported to `Group-Project-1/reports/`.
 
-```text
-docker compose run --rm analysis table dvwa
-docker compose run --rm analysis table grafana
-docker compose run --rm analysis cve
-docker compose run --rm analysis binaries
-docker compose run --rm analysis secrets
-```
+## Part 2
 
-Exports appear in `Group-Project-1/reports/`. Target archives, full DVWA clone/history, scanner caches, raw evidence, and database snapshots stay in local named volumes. Do not compare teammate counts as equivalent unless target image digests, target architecture, scanner versions, database snapshots, flags, and repository SHA agree. See the Part 1 README for frozen replay and screenshot details.
-
-## Part 2 — build and run against your authorized lab
-
-Open a terminal at the repository root:
+From the repository root:
 
 ```text
 cd Group-Project-2
 docker compose build
 docker compose run --rm lab diff
-docker compose run --rm lab safety-diff original
-docker compose run --rm lab safety-diff updated
 ```
 
-For a deliberate run, replace `LAB-ID` with your own active instance. Use fresh instances for a fair comparison or record shared state:
+Replace `LAB-ID` with your own Academy instance. Use a fresh instance for each comparison run.
 
 ```text
 docker compose run --rm lab original https://LAB-ID.web-security-academy.net/ --log
@@ -95,26 +55,24 @@ docker compose run --rm lab runs
 docker compose run --rm lab export RUN-ID
 ```
 
-Exports appear in `Group-Project-2/logs/`. Private response files, generated transport-safe copies, and raw working state stay in named volumes. Each teammate must use their own authorized lab. Ctrl+C interrupts; a zero exit status is not proof of completion. Record the browser's balance/solved indicator, and note manual steps separately.
+Replace `RUN-ID` with the ID printed by `lab runs`. Redacted logs are exported to `Group-Project-2/logs/`.
 
-## Git hygiene and collaboration
+The runner keeps the originals unchanged and runs separate copies with direct HTTPS and TLS verification. Ctrl+C stops a run. Check completion in the browser; neither script purchases the jacket.
 
-Root ignore rules exclude local agent/cloud configuration, `.env` files, private keys, caches, and raw/exported evidence. Empty report/log directories are retained via `.gitkeep`. All project configuration, documentation, tools, and supplied scripts are intended to be versioned. The supplied scripts contain public training credentials; they are not real account credentials. Never add your real cookies, passwords, lab tokens, or raw HTML to Git.
+## Cleanup
 
-Share reviewed, sanitized evidence through your team's chosen channel, or explicitly force-add only files you have checked. Keep machine-specific `.env` overrides local. Do not commit result files simply to make teammate counts match. The two Compose project names are distinct; cleanup of one does not affect the other. Multiple checkouts of the same project on one Docker engine share that fixed project's volumes, so do not run those concurrently or use them as independent experiments.
+Run inside the project directory. These commands delete its containers, volumes, and network. Source files and exported reports/logs remain.
 
-## Delete only one lab
-
-From `Group-Project-1`:
+**Part 1:**
 
 ```text
 docker compose down --volumes --remove-orphans --rmi local
 ```
 
-From `Group-Project-2`:
+**Part 2** (also removes its built image):
 
 ```text
 docker compose down --volumes --remove-orphans --rmi all
 ```
 
-If you used the Part 2 README's optional dedicated builder, also remove only that builder with `docker buildx rm se6002-group-project-2-builder`. No global pruning. Git/source files and exported reports/logs remain; named volumes and their private evidence are deleted. Shared upstream images/layers and default builder caches are preserved where exclusive project ownership cannot be established.
+Keep `.env`, cookies, raw responses, and unredacted evidence out of Git. See each project's README for inspection commands, screenshots, troubleshooting, and optional builder cleanup.
